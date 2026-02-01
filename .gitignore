@@ -45,3 +45,6 @@ src/sbmlsim/combine/results
 src/sbmlsim/combine/examples/l1v4/sbmlsim/
 
 src/sbmlsim/comparison/amicitesting/icg_sd/
+
+# Ignore generated sensitivity reports
+sensitivity_report_*/

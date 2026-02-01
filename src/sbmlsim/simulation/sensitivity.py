@@ -144,13 +144,17 @@ class ModelSensitivity(object):
 
         changes = {}
         for key, value in p_ref.items():
-            magnitude = value.magnitude
+            # value is a plain float, get units from model.uinfo
+            try:
+                units = model.uinfo[key]
+            except KeyError:
+                units = "dimensionless"
             # FIXME: use lognormal to avoid negative values, or remove negative samples
             if distribution == DistributionType.NORMAL_DISTRIBUTION:
-                values = np.random.normal(magnitude, scale=magnitude * cv, size=size)
+                values = np.random.normal(value, scale=value * cv, size=size)
             else:
                 raise ValueError(f"Unsupported distribution: {distribution}")
-            changes[key] = Q_(values, value.units)
+            changes[key] = Q_(values, units)
 
         return Dimension("dim_sens", changes=changes)
 
@@ -185,11 +189,16 @@ class ModelSensitivity(object):
         index = 0
         num_pars = len(p_ref)
         for key, value in p_ref.items():
-            values = np.ones(shape=(2 * num_pars,)) * value.magnitude
+            # value is a plain float, get units from model.uinfo
+            try:
+                units = model.uinfo[key]
+            except KeyError:
+                units = "dimensionless"
+            values = np.ones(shape=(2 * num_pars,)) * value
             # change parameters in correct position
-            values[index] = value.magnitude * (1.0 + difference)
-            values[index + num_pars] = value.magnitude * (1.0 - difference)
-            changes[key] = Q_(values, value.units)
+            values[index] = value * (1.0 + difference)
+            values[index + num_pars] = value * (1.0 - difference)
+            changes[key] = Q_(values, units)
             index += 1
         return Dimension("dim_sens", changes=changes)
 

@@ -9,6 +9,7 @@ from sbmlsim.simulation import Timecourse, TimecourseSim
 from sbmlsim.simulation.sensitivity import ModelSensitivity
 from sbmlsim.simulator import SimulatorSerial
 from sbmlsim.result import XResult
+from sbmlsim.report.sensitivity_report import QuartoSensitivityReport
 
 
 def plot_results(xres: XResult):
@@ -25,8 +26,8 @@ def plot_results(xres: XResult):
         ]:
             # mean line
             ax.plot(
-                xres._time,
-                xres.mean_all_dims(key=sid),
+                xres.xds.coords["_time"],
+                xres.dim_mean(key=sid),
                 color=color,
                 label=sid,
             )
@@ -35,8 +36,8 @@ def plot_results(xres: XResult):
 
     for ax in (ax2, ax4):
         ax.plot(
-            xres.mean_all_dims(key="[X]"),
-            xres.mean_all_dims(key="[Y]"),
+            xres.dim_mean(key="[X]"),
+            xres.dim_mean(key="[Y]"),
             color="black",
             label="Y~X",
         )
@@ -70,7 +71,7 @@ def run_sensitivity():
         ]
     )
 
-    model: roadrunner.RoadRunner = simulator.worker.r
+    model: roadrunner.RoadRunner = simulator.model
 
     distrib_scan = ModelSensitivity.distribution_sensitivity_scan(
         model=model, simulation=tcsim, cv=0.03, size=50
@@ -78,13 +79,29 @@ def run_sensitivity():
     res_distrib_scan = simulator.run_scan(distrib_scan)
 
     diff_scan = ModelSensitivity.difference_sensitivity_scan(
-        model=simulator.model, simulation=tcsim, difference=0.1
+        model=model, simulation=tcsim, difference=0.1
     )
     res_diff_scan = simulator.run_scan(diff_scan)
 
     # create figure
     plot_results(res_distrib_scan)
     plot_results(res_diff_scan)
+
+    # Generate interactive reports
+    print("-" * 40)
+    print("Generating Interactive Reports...")
+
+    # Generate report for distribution sensitivity
+    report_distrib = QuartoSensitivityReport(
+        res_distrib_scan, output_dir="sensitivity_report_distrib"
+    )
+    report_distrib.build()
+
+    # Generate report for difference sensitivity
+    report_diff = QuartoSensitivityReport(
+        res_diff_scan, output_dir="sensitivity_report_diff"
+    )
+    report_diff.build()
 
 
 if __name__ == "__main__":
